@@ -1,0 +1,37 @@
+
+
+
+program P
+	const int c = 5;
+	int i;
+	int ii;
+
+{
+
+	void main()
+	{
+		i = 0;
+		ii = 0;
+		
+		while(i < 50 || i < 100 && i < 75){
+			print(i);
+			print(' ');
+			print('(');
+			while (ii < 5){
+				print('a');
+				print(c);
+				ii++;
+			}
+			print(')');
+			i++;
+			ii = 0;
+			
+		}
+		
+		
+		
+		
+
+	}
+	
+}

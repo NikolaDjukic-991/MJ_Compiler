@@ -1,0 +1,204 @@
+package rs.ac.bg.etf.pp1;
+
+import java_cup.runtime.*;
+import org.apache.log4j.*;
+
+//import java.io.*;
+
+parser code {:
+	Logger log = Logger.getLogger(getClass());
+
+	public void report_fatal_error(String message, Object info) throws java.lang.Exception {
+		done_parsing();
+		report_error(message, info);
+	}
+
+	public void syntax_error(Symbol cur_token) {
+		report_error("\nSyntax error", cur_token);
+	}
+
+	public void unrecovered_syntax_error(Symbol cur_token) throws java.lang.Exception {
+		report_fatal_error("Fatal error, can not continue parsing", cur_token);
+	}
+
+	public void report_error(String message, Object info) {
+		StringBuilder msg = new StringBuilder(message);
+		if (info instanceof Symbol)
+			msg.append(" at ").append(((Symbol)info).left);
+		log.error(message);
+	}
+
+:}
+
+scan with {:
+	Symbol s = this.getScanner().next_token();
+	if ( s != null && s.value != null)
+		log.info(s.toString() + " " + s.value.toString());
+	return s;
+:}
+
+terminal PROGRAM, IDENT, LEFT_CBRACKET, RIGHT_CBRACKET, SEMIC, LEFT_BRACKET, RIGHT_BRACKET, LEFT_SBRACKET, RIGHT_SBRACKET, ASSIGNMENT, COMMA, CONST, CLASS, RETURN, PRINT, READ, DOT, NEW, EXTENDS;
+
+terminal IF, ELSE, WHILE, BREAK;
+terminal VOID;
+terminal EQU, NEQ, GT, GTE, LE, LEQ, PP, MM;
+terminal ADD, SUB, MUL, DIV, MOD;
+terminal OR, AND;
+
+terminal Integer NUM;
+terminal char CHAR;
+terminal bool BOOL;
+terminal String STRING;
+
+
+non terminal Program, DeclList, ClassDecl, ClassDeclList, Extends, Type, Return, Array, Value, Statement, StatementList, Assign, DesignatorModifiers, Else;
+non terminal MethodDeclList, MethodDecl;
+non terminal VarDeclList, VarDecl;
+non terminal ConstDeclList, ConstDecl, Consts;
+non terminal FormPars, FormParsList, FormParsDecl, ActPars;
+non terminal Condition, CondTerm, CondFact;
+non terminal Expr, Term, Factor, Designator, IdentList, Relop, Addop, Mulop;
+non terminal ProgramVarDeclList;
+
+precedence left ELSE;
+precedence left SUB;
+
+Program ::= PROGRAM IDENT DeclList LEFT_CBRACKET MethodDeclList RIGHT_CBRACKET ;
+
+DeclList ::= DeclList VarDeclList
+			| DeclList ConstDeclList
+			| DeclList ClassDeclList
+			| /* epsilon */
+			;
+			
+			
+VarDeclList ::= Type VarDecl IDENT Array SEMIC;
+			
+			
+
+VarDecl ::= VarDecl IDENT Array COMMA
+			| /* epsilon */
+			;
+			
+Array ::= LEFT_CBRACKET RIGHT_CBRACKET
+		| /* epsilon */
+		;
+
+ConstDeclList ::= ConstDeclList ConstDecl	;
+
+ConstDecl ::= CONST Type Consts IDENT ASSIGNMENT Value SEMIC ;
+
+Consts ::=  Consts IDENT ASSIGNMENT Value COMMA
+		| /* epsilon */
+		;
+
+Value ::= NUM
+		| CHAR
+		| BOOL
+		| STRING
+		;
+
+
+ClassDecl ::= CLASS IDENT Extends LEFT_CBRACKET  VarDeclList LEFT_CBRACKET MethodDeclList RIGHT_CBRACKET RIGHT_CBRACKET ;
+
+ClassDeclList ::= ClassDeclList ClassDecl;
+
+Extends ::= EXTENDS Type
+			| /* epsilon */
+			;
+
+Type ::= IDENT ;
+
+MethodDeclList ::= MethodDeclList MethodDecl
+				| /* epsilon */
+				;
+
+MethodDecl ::= Return IDENT LEFT_BRACKET FormPars RIGHT_BRACKET VarDeclList LEFT_CBRACKET StatementList RIGHT_CBRACKET
+			 ;
+
+Return ::= VOID | Type ;
+
+FormPars ::= FormParsList | /* epsilon */;
+
+FormParsList ::= FormParsList COMMA FormParsDecl 
+				| FormParsDecl
+				;
+
+FormParsDecl ::= Type IDENT Array ;
+
+StatementList ::= Statement
+				| /* epsilon */
+				;
+
+Statement ::= Designator Assign SEMIC 
+			| IF LEFT_BRACKET Condition RIGHT_BRACKET Statement Else
+			| WHILE LEFT_BRACKET Condition RIGHT_BRACKET Statement
+			| BREAK SEMIC
+			| RETURN SEMIC
+			| RETURN Expr SEMIC
+			| READ LEFT_BRACKET Designator RIGHT_BRACKET SEMIC
+			| PRINT LEFT_BRACKET Expr RIGHT_BRACKET SEMIC
+			| PRINT LEFT_BRACKET Expr COMMA NUM RIGHT_BRACKET SEMIC
+			| LEFT_CBRACKET StatementList RIGHT_CBRACKET
+			;
+			
+Else ::= ELSE Statement | /* epsilon */ ;
+
+
+Assign ::= ASSIGNMENT Expr
+			| LEFT_BRACKET ActPars RIGHT_BRACKET
+			| PP
+			| MM
+			;
+
+Condition ::= CondTerm | Condition OR CondTerm ;
+
+
+CondTerm ::=  CondTerm CondFact | CondTerm AND CondFact;
+CondFact ::= Expr
+			| Expr Relop Expr
+			;
+
+Expr ::= Term
+		| SUB Term
+		| Term Addop
+		| SUB Term Addop Term
+		;
+
+
+Term ::= Factor
+		| Mulop Factor
+		;
+
+Factor ::= Designator DesignatorModifiers
+		| NUM
+		| CHAR
+		| STRING
+		| NEW Type
+		| NEW Type LEFT_SBRACKET Expr RIGHT_SBRACKET
+		;
+		
+DesignatorModifiers ::= LEFT_BRACKET ActPars RIGHT_BRACKET | LEFT_BRACKET Expr RIGHT_BRACKET | /* epsilon */;
+
+Designator ::= IDENT | IDENT IdentList ;
+
+IdentList ::= IdentList DOT IDENT
+			| IdentList LEFT_SBRACKET Expr RIGHT_SBRACKET
+			;
+
+Relop ::= EQU
+		| NEQ
+		| GT
+		| GTE
+		| LE
+		| LEQ
+		;
+
+Addop ::= ADD
+		| SUB
+		;
+
+Mulop ::= MUL
+		| DIV
+		| MOD
+		;

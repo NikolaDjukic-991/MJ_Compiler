@@ -1,0 +1,930 @@
+package rs.ac.bg.etf.pp1;
+
+import java_cup.runtime.*;
+import org.apache.log4j.*;
+import rs.etf.pp1.mj.runtime.Code;
+
+import rs.etf.pp1.symboltable.Tab;
+import rs.etf.pp1.symboltable.concepts.*;
+
+import rs.ac.bg.etf.pp1.WhileStruct.CondEval;
+
+
+//import java.io.*;
+
+parser code {:
+	boolean error = false;
+
+	public enum VarCountMode {
+		GLOBAL, CLASS, MAIN, NONE
+	}
+	
+	public enum VarCountType {
+		VAR, ARRAY
+	}
+	
+	public enum MethodCountMode{
+		CLASS, GLOBAL, NONE
+	}
+
+	int globalVarCount = 0;
+	int globalArrayCount = 0;
+	int printCallCount = 0;
+	int constCount = 0;
+	int mainVarCount = 0;
+	int classVarCount = 0;
+	int classCount = 0;
+	int statementBlockCount = 0;
+	int formParsCount = 0;
+	
+	int globalMethodCount = 0;
+	int classMethodCount = 0;
+	
+	int asstype = 0;
+	boolean allocArray = false;
+	boolean arrayAccess = false;
+	boolean arrayStore = false;
+	boolean jumpjump = false;
+	
+	VarCountMode varmode = VarCountMode.NONE;
+	
+	MethodCountMode methodmode = MethodCountMode.NONE;
+	
+	
+	Logger log = Logger.getLogger(getClass());
+	
+	public void switchVarMode(VarCountMode c){
+		this.varmode = c;
+	}
+	
+	public void switchMethodMode(MethodCountMode c){
+		this.methodmode = c;
+	}
+	
+	public void incrementCount(VarCountType t) { 
+		if(this.varmode == VarCountMode.GLOBAL){
+			if(t == VarCountType.VAR)
+				globalVarCount++;
+			if(t == VarCountType.ARRAY)
+				globalArrayCount++;
+			
+		}
+		if(this.varmode == VarCountMode.MAIN)  mainVarCount++;
+		if(this.varmode == VarCountMode.CLASS) classVarCount++;
+	}
+	
+	public void incrementMethodCount(){
+		if(this.methodmode == MethodCountMode.GLOBAL)
+			globalMethodCount++;
+		if(this.methodmode == MethodCountMode.CLASS)
+			classMethodCount++;
+		
+	}
+
+	public void report_fatal_error(String message, Object info) throws java.lang.Exception {
+		done_parsing();
+		report_error(message, info);
+	}
+
+	public void syntax_error(Symbol cur_token) {
+		error = true;
+		report_error("\nSyntax error", cur_token);
+	}
+
+	public void unrecovered_syntax_error(Symbol cur_token) throws java.lang.Exception {
+		error = true;
+		report_fatal_error("Fatal error, can not continue parsing", cur_token);
+	}
+
+	public void report_error(String message, Object info) {
+		error = true;
+		StringBuilder msg = new StringBuilder(message);
+		if (info instanceof Symbol)
+			msg.append(" at line ").append(((Symbol)info).left).append(" : ").append(((Symbol)info).right);
+		log.error(msg.toString());
+		
+	}
+	
+		public void report_info(String message, Object info) {
+		StringBuilder msg = new StringBuilder(message);
+		if (info instanceof Symbol)
+			msg.append(" at line ").append(((Symbol)info).left).append(" : ").append(((Symbol)info).right);
+		log.info(msg.toString());
+		
+	}
+
+:}
+
+scan with {:
+	Symbol s = this.getScanner().next_token();
+	if ( s != null && s.value != null)
+		log.info(s.toString() + " " + s.value.toString());
+	return s;
+:}
+
+init with {:
+	Tab.init(); // Universe scope
+	Struct stringStruct = new Struct(Struct.Array);
+	stringStruct.setElementType(Tab.find("char").getType());
+	Tab.insert(Obj.Type, "String", stringStruct);
+	
+	Struct boolStruct = new Struct(Struct.Bool);
+	Tab.insert(Obj.Type, "boolean", boolStruct);
+	
+:}
+
+action code {:
+	boolean hasReturn = false;
+	Struct curType = null;
+	boolean isArray = false;
+	boolean mainFound = false;
+	int fpPos = 0;
+	Struct actRet = Tab.noObj.getType();
+	int loopNest = 0;
+	Obj currentMethod = null;
+	Obj last = null;
+	boolean negated = false;
+:}
+
+terminal PROGRAM, LEFT_CBRACKET, RIGHT_CBRACKET, SEMIC, LEFT_BRACKET, RIGHT_BRACKET, LEFT_SBRACKET, RIGHT_SBRACKET, ASSIGNMENT, COMMA, CONST, CLASS, RETURN, PRINT, READ, DOT, NEW, EXTENDS;
+
+terminal IF, ELSE, WHILE, BREAK;
+terminal VOID;
+terminal EQU, NEQ, GT, GTE, LE, LEQ, PP, MM;
+terminal OR, AND;
+
+terminal String IDENT;
+
+terminal Integer NUM;
+terminal char CHAR;
+terminal boolean BOOL;
+terminal String STRING;
+
+terminal int ADD, SUB, MUL, DIV, MOD;
+
+non terminal Program, DeclList, ClassDecl, Extends, Array, Statement, StatementList, DesignatorModifiers, Else, While;
+non terminal MethodDeclList, MethodDecl;
+non terminal VarDeclList, VarDecl;
+non terminal ConstDeclList, ConstDeclList2, ConstDeclAdditional, Const;
+non terminal FormPars, FormParsList, FormParsDecl, ActPars;
+non terminal Condition, CondTerm, CondEvaluated, CondTermEval, CondFactEval;
+non terminal ExprList;
+
+non terminal VarDeclAdditional, VarDeclList2, MethodVarDeclList, MethodVarDeclAdditional;
+
+non terminal Matched, Unmatched, GlobalVarDeclList, GlobalMethodDeclList, GlobalMethodDecl;
+
+// Non terminals for semantic analysis
+non terminal Obj ProgName,  Designator, Type;
+non terminal Struct Expr, Term, Factor, Assign, FactList, IdentList, ExprList2, Return;
+non terminal Integer PrintWidth;
+non terminal Obj Value;
+
+non terminal Integer Addop, Mulop, Neg, Relop, CondFact;
+
+
+
+
+start with Program;
+
+Program ::= PROGRAM ProgName:p DeclList LEFT_CBRACKET {: this.parser.switchMethodMode(MJParser.MethodCountMode.GLOBAL); :} GlobalMethodDeclList {: this.parser.switchMethodMode(MJParser.MethodCountMode.NONE); :} RIGHT_CBRACKET
+{:
+	Code.dataSize = Tab.currentScope().getnVars();
+	Tab.chainLocalSymbols(p);
+	Tab.closeScope();
+:};
+
+ProgName ::= IDENT:pName
+{:
+	RESULT = Tab.insert(Obj.Prog, pName, Tab.noType);
+	Tab.openScope(); 
+:};
+
+DeclList ::= DeclList {: this.parser.switchVarMode(MJParser.VarCountMode.GLOBAL); :} VarDeclList {: this.parser.switchVarMode(MJParser.VarCountMode.NONE); :}
+			| DeclList ConstDeclList
+			| DeclList ClassDecl
+			| /* epsilon */
+			;
+
+VarDeclList ::= Type VarDeclList2 SEMIC;
+
+VarDeclList2 ::= VarDeclAdditional VarDecl;
+
+VarDeclAdditional ::= VarDeclAdditional VarDecl COMMA
+					| /**/
+					;
+				
+VarDecl ::= IDENT:varName Array 
+{: 
+	Obj p = Tab.find(varName);
+	if ( p == Tab.noObj ) {
+		parser.report_info("Variable " + varName + " declared at "+ varNameleft, null);
+		this.parser.incrementCount(MJParser.VarCountType.VAR);
+		
+		if(isArray){
+			Struct arrStruct = new Struct(Struct.Array);
+			arrStruct.setElementType(curType);
+			Tab.insert(Obj.Var, varName, arrStruct);
+		}
+		else
+			Tab.insert(Obj.Var, varName, curType);
+	} else {
+		parser.report_error("Variable name in use " + varName + " at "+varNameleft, null);
+	}
+	isArray = false;
+:}
+			| error;
+
+			
+Array ::= LEFT_SBRACKET RIGHT_SBRACKET {: this.parser.incrementCount(MJParser.VarCountType.ARRAY); isArray = true; :}
+		| /* epsilon */
+		;
+
+ConstDeclList ::= CONST Type ConstDeclList2 SEMIC;
+
+ConstDeclList2 ::= ConstDeclAdditional Const;
+
+ConstDeclAdditional ::= ConstDeclAdditional Const COMMA
+				|/**/;
+
+Const ::= IDENT:constName ASSIGNMENT Value:v 
+{: 
+	if(curType.assignableTo(v.getType())){
+		this.parser.constCount++;
+		parser.report_info("Constant " + constName + " declared at " + constNameleft, null);
+		Obj p = Tab.find(constName);
+		if (p == Tab.noObj){
+		
+			Obj constVar = Tab.insert(Obj.Con, constName, curType);
+			constVar.setAdr(v.getAdr());
+		}
+		else
+			parser.report_error("Const variable name in use " + constName + " at "+constNameleft, null);
+	} else {
+		parser.report_error("Non-matching types at "+constNameleft, null);
+	}
+
+:} ; 
+
+Value ::= NUM:v {: RESULT = new Obj(Obj.Con, "", Tab.find("int").getType(), v, 0); :}
+		| CHAR:v {: RESULT = new Obj(Obj.Con, "", Tab.find("char").getType(), v, 0); :}
+		| BOOL:v {: RESULT  = new Obj(Obj.Con, "", Tab.find("boolean").getType(), v ? 1:0, 0); :}
+		| STRING:v {:	RESULT = null; :} /* TODO: store string and calculate string adress offset */
+		;
+
+
+ClassDecl ::= CLASS IDENT:className
+{:	
+	Obj p = Tab.find(className);
+	if ( p == Tab.noObj ){
+		parser.report_info("Class " + className + " declared at " + classNameleft, null);
+		Tab.insert(Obj.Type, className, new Struct(Struct.Class));
+	}
+	else
+		parser.report_error("Class variable name in use " + className + " at "+classNameleft, null);
+:}
+Extends LEFT_CBRACKET
+{:
+	this.parser.switchVarMode(MJParser.VarCountMode.CLASS);
+	Tab.openScope();
+	Tab.insert(Obj.Var, "this", new Struct(Struct.Class));
+:}
+ VarDeclList
+{:
+	this.parser.switchVarMode(MJParser.VarCountMode.NONE);
+:}
+LEFT_CBRACKET
+{:
+	this.parser.switchMethodMode(MJParser.MethodCountMode.CLASS);
+:}
+MethodDeclList RIGHT_CBRACKET RIGHT_CBRACKET
+{:
+	this.parser.switchMethodMode(MJParser.MethodCountMode.NONE);
+	this.parser.classCount++;
+	Tab.chainLocalSymbols(Tab.find(className).getType());
+	Tab.closeScope();
+:}
+;
+
+
+
+Extends ::= EXTENDS Type:t
+{:
+	boolean validType = false;
+	if(t.getType().getKind() == Struct.Class)
+		parser.report_info("Extends valid type "+t.getName(),null);
+	else
+		parser.report_info("Extends invalid type "+t.getName(),null);
+		
+:}
+			| EXTENDS error
+			| /* epsilon */
+			;
+
+Type ::= IDENT:typeName 
+{:
+	Obj typeNode = Tab.find(typeName);
+	if ( typeNode == Tab.noObj) {
+		parser.report_error("Undefined type - " + typeName, null);
+		RESULT = Tab.noObj;
+	} else {
+		if ( Obj.Type == typeNode.getKind() ) {
+			RESULT = typeNode;
+			curType = typeNode.getType();
+		} else {
+			parser.report_error(typeName + " - is not a type name at " + typeNameleft, null);
+			RESULT = Tab.noObj;
+		}
+	}
+	
+:};
+
+MethodDeclList ::= MethodDeclList MethodDecl
+				| /* epsilon */
+				;
+
+MethodDecl ::= Return:retType IDENT:methName LEFT_BRACKET FormPars RIGHT_BRACKET MethodVarDeclList 
+{:	
+	Obj p = Tab.find(methName);
+	if ( p == Tab.noObj ){
+		parser.report_info("Method " + methName + " declared at " + methNameleft, null);
+		currentMethod = Tab.insert(Obj.Meth, methName, retType);
+		currentMethod.setAdr(Code.pc);
+		
+		Tab.openScope();
+		fpPos = 0;
+	}
+	else
+		parser.report_error("Method name in use " + methName + " at "+methNameleft, null);
+
+	currentMethod.setLevel(fpPos);
+:}
+LEFT_CBRACKET StatementList RIGHT_CBRACKET
+{:
+	if(!retType.equals(actRet)) parser.report_error("Return types do not match in method: " + methName + " at " +methNameleft,null);
+	if(retType.equals(Tab.noObj.getType()) && !hasReturn) parser.report_error("No return for function "+methName+" at "+methNameleft,null);
+	actRet = Tab.noObj.getType(); 
+	this.parser.incrementMethodCount();
+	Tab.chainLocalSymbols(Tab.find(methName));
+	Tab.closeScope();
+	
+	hasReturn = false;
+	currentMethod = null;
+:}
+;
+			 
+GlobalMethodDeclList ::=  GlobalMethodDeclList GlobalMethodDecl  
+				| /**/
+				;
+
+GlobalMethodDecl ::=  Return:retType IDENT:methName
+	{:
+		Obj p = Tab.find(methName);
+		if( p == Tab.noObj ){
+			Tab.openScope();
+			parser.report_info("Global method " + methName + " declared at "+ methNameleft, null);
+			currentMethod = Tab.insert(Obj.Meth, methName, retType);
+		} else {
+			parser.report_error("Method name in use " + methName + " at "+methNameleft, null);
+		}
+	:}
+	LEFT_BRACKET FormPars RIGHT_BRACKET MethodVarDeclList
+	{:
+		currentMethod.setAdr(Code.pc);
+		if(methName.equals("main")){
+			this.parser.switchVarMode(MJParser.VarCountMode.MAIN);
+			mainFound = true;
+			Code.mainPc = currentMethod.getAdr();
+		}
+		currentMethod.setLevel(fpPos);
+		Code.put(Code.enter);
+		Code.put(currentMethod.getLevel());
+		Code.put(Tab.currentScope().getnVars());
+		
+		fpPos = 0;
+		
+	:}
+		LEFT_CBRACKET StatementList RIGHT_CBRACKET
+	{:
+		if(!actRet.assignableTo(retType)) parser.report_error("Return types do not match in method: " + methName + " at " +methNameleft,null);
+		else {parser.report_info("Method "+methName+" was either void or returned correct type.", null); }
+		
+		Code.put(Code.exit);
+		Code.put(Code.return_);
+		
+		actRet = Tab.noObj.getType();
+		this.parser.incrementMethodCount();
+		this.parser.switchVarMode(MJParser.VarCountMode.NONE);
+		Tab.chainLocalSymbols(Tab.find(methName));
+		Tab.closeScope();
+		hasReturn = false;
+		currentMethod = null;
+	:} 
+				;
+
+MethodVarDeclList ::= MethodVarDeclList Type MethodVarDeclAdditional VarDecl SEMIC
+				| /**/
+				;
+
+
+
+MethodVarDeclAdditional ::= MethodVarDeclAdditional VarDecl COMMA
+				| /**/
+				;
+
+
+
+
+Return ::= VOID
+{:
+  RESULT = 	Tab.noObj.getType();
+:} 
+| Type:t
+{:
+	RESULT = t.getType();
+:}
+;
+
+FormPars ::= FormParsList | /* epsilon */;
+
+FormParsList ::=  FormParsList COMMA FormParsDecl 
+				| FormParsList COMMA error
+				| FormParsDecl
+				| error
+				;
+
+FormParsDecl ::= Type:type IDENT:formparName Array
+{:
+	this.parser.formParsCount++;
+	Obj p = Tab.find(formparName);
+	if(p == Tab.noObj){
+		Obj newObj = Tab.insert(Obj.Var, formparName, type.getType());
+		newObj.setFpPos(fpPos++);
+	}
+
+:};
+
+StatementList ::= StatementList Statement
+				| /* epsilon */
+				;
+
+
+Statement ::= Matched | Unmatched ;
+
+
+
+
+Unmatched ::= IF LEFT_BRACKET Condition RIGHT_BRACKET Statement
+			| IF LEFT_BRACKET Condition RIGHT_BRACKET Matched ELSE Unmatched 
+			| While LEFT_BRACKET CondEvaluated RIGHT_BRACKET Unmatched
+			{:
+				loopNest--;
+				Code.putJump(WhileStruct.getCurrentTop().getTopAdr());
+				Code.fixup(WhileStruct.getCurrentTop().getEndJumpInstrAdr()+1);
+				WhileStruct.exitWhile();
+			:}
+			;
+
+
+Matched ::= Designator:des
+{:
+	if(this.parser.arrayAccess){
+		this.parser.arrayStore = true;
+		this.parser.arrayAccess = false;
+	}
+	if(des.getKind() == Obj.Con){
+		this.parser.report_error("Error: Cannot assign value to a constant at "+desleft, null);
+	}
+	
+:}  Assign:type SEMIC
+{:
+if(type.assignableTo(des.getType()) || (this.parser.arrayStore && type.assignableTo(des.getType().getElemType()))){
+	if(this.parser.asstype == 1){
+		Code.load(des);
+	
+		Obj c = Tab.insert(Obj.Con, "", Tab.intType);
+		c.setAdr(1);
+		Code.load(c);
+		Code.put(Code.add);
+	}
+	if(this.parser.asstype == 2) {
+		Code.load(des);
+	
+		Obj c = Tab.insert(Obj.Con, "", Tab.intType);
+		c.setAdr(1);
+		Code.load(c);
+		Code.put(Code.sub);
+	}
+	if(this.parser.arrayStore && !this.parser.allocArray){
+		Obj o = new Obj(Obj.Elem, "", des.getType().getElemType());
+		Code.store(o);
+	}
+	boolean storesize = false;
+	if(this.parser.allocArray){
+		this.parser.allocArray = false;
+		storesize = true;
+		
+		Code.put(Code.newarray);
+		Code.put(1);
+
+	}
+	
+	if(this.parser.arrayStore){
+		this.parser.arrayStore = false;
+	} else
+	Code.store(des);
+	
+	
+	parser.report_info("Correct assignment at "+desleft,null);
+	
+
+} else {
+	parser.report_error("Unable to assign type "+type.getKind()+" to "+des.getName()+" of type "+des.getType().getKind()+" at "+desleft,null); 
+}
+:} 
+			| Designator DesignatorModifiers SEMIC
+			| IF LEFT_BRACKET Condition RIGHT_BRACKET Matched ELSE Matched 
+			| While LEFT_BRACKET CondEvaluated RIGHT_BRACKET  Matched
+			{:
+				loopNest--;
+				Code.putJump(WhileStruct.getCurrentTop().getTopAdr());
+				Code.fixup(WhileStruct.getCurrentTop().getEndJumpInstrAdr()+1);
+				WhileStruct.exitWhile();
+			:}
+			| BREAK:b  SEMIC
+			{:
+				if(loopNest > 0) parser.report_info("Break instruction encountered at "+bleft+" Nesting lvl("+loopNest+")", null);
+				else parser.report_error("Encountered break instruction out of loop at "+bleft, null);
+			
+			:}
+			| RETURN:r SEMIC
+			{:
+				hasReturn = true;
+				actRet = Tab.noObj.getType();
+				if(currentMethod.getType().assignableTo(actRet)){
+					parser.report_info("Matching return for method "+currentMethod.getName()+" at "+rleft, null);
+				} else {
+					parser.report_error("Incorrect return for method "+currentMethod.getName()+" at "+rleft, null);
+				}
+			:}
+			| RETURN:r Expr:ex SEMIC
+			{:
+				hasReturn = true;
+				actRet = ex;
+				if(currentMethod.getType().assignableTo(actRet)){
+					parser.report_info("Matching return for method "+currentMethod.getName()+" at "+rleft, null);
+				} else {
+					parser.report_error("Incorrect return for method "+currentMethod.getName()+" at "+rleft, null);
+				}
+			:}
+			| READ LEFT_BRACKET Designator:d RIGHT_BRACKET SEMIC
+			{:
+				if(d.getType() != Tab.intType &&
+				d.getType() != Tab.charType &&
+				d.getType() != Tab.find("boolean").getType() && // TODO IMPLEMENT BOOLTYPE 
+				d.getType() != Tab.find("String").getType()){
+					parser.report_error("Read argument must be int/char/bool/String at " + dleft,null);
+				} else {
+					Code.load(d);
+					if(d.getType() != Tab.charType){
+						Code.put(Code.read);
+					} else {
+						Code.put(Code.bread);
+					}
+					Code.store(d);
+					parser.report_info("Correct type for read at " + dleft,null);
+				}
+			:}
+			| PRINT LEFT_BRACKET Expr:e PrintWidth:w RIGHT_BRACKET SEMIC
+			{:
+				// TODO make sure it's int/char/bool/str 
+				this.parser.printCallCount++;
+				if(e.isRefType()){
+					parser.report_error("Write argument must be int/char/bool/String at " + eleft,null);
+				} else {
+					if(e.getKind() != 0){
+						parser.report_info("Correct argument for write at " + eleft,null);
+						if (e != Tab.charType){
+							Code.loadConst(w);
+							Code.put(Code.print);
+						}
+						if(e == Tab.charType){
+							Code.loadConst(1);
+							Code.put(Code.bprint);
+						}
+					}
+					else parser.report_error("Write argument must be int/char at " + eleft,null);
+				}
+			:}
+			| LEFT_CBRACKET StatementList RIGHT_CBRACKET {: this.parser.statementBlockCount++; :}
+			;
+			
+PrintWidth ::= COMMA NUM:n {: RESULT = n; :} | {: RESULT = 1; :} /**/;
+
+While ::= WHILE
+	{:
+		loopNest++;
+		WhileStruct.enterWhile(Code.pc);
+	:};
+
+Assign ::= ASSIGNMENT Expr:e {: this.parser.asstype = 0; RESULT = e; :}
+			| error
+			| PP
+			{:
+				this.parser.asstype = 1;
+				RESULT = Tab.intType;
+			:}
+			| MM
+			{:
+				this.parser.asstype = 2;
+				RESULT = Tab.intType;
+			:}
+			;
+			
+CondEvaluated ::= Condition
+	{:
+		WhileStruct.setEndJumpInstrAdr(Code.pc);
+		Code.putJump(99);
+		
+		CondEval jmps = WhileStruct.getCurrentTop().getJumps();
+		while(jmps != null){
+			Code.fixup(jmps.getAdr()+1);
+			jmps = jmps.next;
+		}
+		
+		
+
+	:};
+
+Condition ::= CondTermEval
+	{:
+		
+
+		
+
+
+	:}
+	| Condition OR CondTerm
+	{:
+	
+		WhileStruct.getCurrentTop().addCodeJump(Code.pc);
+		Code.putJump(0);
+		
+		CondEval ce = WhileStruct.getCurrentTop().getConds(); // Jump to the jump out instruction
+		while(ce != null){
+			Code.fixup(ce.getAdr()+1);
+			ce = ce.next;
+		}
+		WhileStruct.getCurrentTop().wipeConds();
+	
+		
+	:}
+	| error;
+	
+	
+CondTermEval ::= CondTerm
+	{:
+		WhileStruct.getCurrentTop().addCodeJump(Code.pc);
+		Code.putJump(0); // all conditions that were "AND" delimited passed, jump into a code block
+		CondEval ce = WhileStruct.getCurrentTop().getConds(); // after this point the next condition should execute or the jump to exit the loop (THIS IS WHERE WE WANT TO JUMP)
+		while(ce != null){
+			Code.fixup(ce.getAdr()+1);
+			ce = ce.next;
+		}
+		WhileStruct.getCurrentTop().wipeConds();
+	:}
+;
+
+
+CondTerm ::=  CondFactEval
+	| CondTerm AND CondFactEval
+
+	;
+	
+CondFactEval ::= CondFact:op
+{:
+	WhileStruct.getCurrentTop().addCondition(Code.pc);
+	Code.putFalseJump(op, 0);
+:}
+;
+
+CondFact ::= Expr:e
+			{:
+				if(!Tab.find("boolean").getType().equals(e)){
+					this.parser.report_error("Error expression inside a condition must be a boolean type at " + eleft, null);
+				}
+				Obj c = new Obj(Obj.Con, "",Tab.intType);
+				c.setAdr(1);
+				Code.load(c);
+				
+				RESULT = Code.eq;
+				
+				
+			:}
+			| Expr:e1 Relop:op Expr:e2
+			{:
+				if(!e1.compatibleWith(e2)){
+					this.parser.report_error("Error condition expression not compatible at " + e1left, null);
+					RESULT = 0;
+				} else {
+					RESULT = op;
+				}
+				// TODO check if compatible. if class or arr only != and ==
+			:}
+			;
+
+			
+Expr ::= Neg:neg Term:t {: if(neg != null) Code.put(neg); :}  ExprList2:list
+{:
+	boolean error = false;
+	if(negated){
+		negated = false;
+		if(t.getKind() != Struct.Int){
+			parser.report_error("Negating non int type at "+ tleft, null);
+			error = true;
+		}
+	}
+	if(t.assignableTo(list) && !error){ // TODO check if compatible types
+			parser.report_info("Correct expression at "+tleft,null);
+			RESULT = t;
+	} else {
+		parser.report_error("Incorrect expression at "+tleft,null);
+		RESULT = Tab.noObj.getType();
+	}
+	
+:}
+		| Neg:neg Term:t
+{:
+	negated = false;
+	if(neg != null){
+		Code.put(neg);
+	}
+	RESULT = t;// TODO check if Term = int
+:};
+		
+ExprList2 ::= Addop:op Term:t
+	{:
+		Code.put(op);
+		RESULT = t;
+	:}
+	| ExprList2:e Addop:op Term:tt
+	{:
+		if(e.compatibleWith(tt)){
+			Code.put(op);
+			RESULT = e;
+		}
+		else {
+			parser.report_error("Incompatible types at "+ttleft, null);
+			RESULT = Tab.noType;
+		}
+	:} ;
+
+Neg ::= SUB {: negated = true; RESULT = Code.neg; :} | {: RESULT = null; :}/**/;
+
+Addop ::= ADD {: RESULT = Code.add; :} | SUB {: RESULT = Code.sub; :};
+
+Term ::= Factor:f {: RESULT = f; :}
+		| Factor:f FactList:flist {: if(f.compatibleWith(flist)) RESULT = f; else RESULT = Tab.noType; :};
+		 
+
+FactList ::= Mulop:op Factor:f
+	{:
+		Code.put(op);
+		RESULT = f;
+	:}
+	| FactList:fl Mulop:op Factor:f
+	{:
+		if(f.compatibleWith(fl)){
+			Code.put(op);
+			RESULT = f;
+		}
+		else{
+			parser.report_error("Incompatible types at " + fleft,null);
+			RESULT = Tab.noType;
+		} 
+	:};
+
+Mulop ::= MUL {: RESULT = Code.mul; :} | DIV {: RESULT = Code.div; :} | MOD {: RESULT = Code.rem; :};
+
+Factor ::= Designator:des DesignatorModifiers:func
+{:
+	if(this.parser.arrayAccess){
+		if(des.getType().getKind() != Struct.Array){
+			parser.report_error("Error "+des.getName()+" must be an array type at "+desleft, null);
+		} else {
+			Obj o = new Obj(Obj.Elem, "", des.getType().getElemType());
+			Code.load(o);
+			this.parser.arrayAccess = false;
+			RESULT = des.getType().getElemType();
+		}
+	} else {
+		Code.load(des);
+		RESULT = des.getType();
+	}
+		// TODO check function params
+:}
+		| NUM:i
+{:
+	Obj c = Tab.insert(Obj.Con, "", Tab.intType);
+	c.setAdr(i.intValue());
+	Code.load(c);
+	RESULT = Tab.intType;
+:}
+		| CHAR:ch
+{:
+	Obj c = Tab.insert(Obj.Con, "", Tab.charType);
+	c.setAdr(ch);
+	Code.load(c);
+	RESULT = Tab.charType;
+:}
+		| BOOL:b
+{:
+	Obj c = Tab.insert(Obj.Con, "", Tab.find("boolean").getType());
+	if(!b) c.setAdr(0);
+	else c.setAdr(1);
+	Code.load(c);
+	RESULT = Tab.find("boolean").getType();
+:}
+	 	| STRING {: RESULT = Tab.find("String").getType(); :}
+		| NEW Type:t
+{:
+	if(t.getType().getKind() == Struct.Class){
+	parser.report_info("Object of type "+t.getName()+" allocated at "+tleft, null);
+	RESULT = t.getType();
+	} else {
+		parser.report_error("Error "+t.getName()+" is not a class type at "+tleft, null);
+		RESULT = Tab.noObj.getType();
+	}
+:}
+		| NEW Type:t LEFT_SBRACKET Expr:e RIGHT_SBRACKET
+{:
+	if(e.assignableTo(Tab.intType)){
+		Struct tt = new Struct(Struct.Array, t.getType());
+		this.parser.allocArray = true;
+		RESULT = tt;		// TODO CHECK ARRAY ???
+	}
+	else RESULT = Tab.noObj.getType();
+:}
+		| NEW Type LEFT_SBRACKET error RIGHT_SBRACKET
+		| LEFT_BRACKET Expr:e RIGHT_BRACKET {: RESULT = e; :}
+		| LEFT_BRACKET error RIGHT_BRACKET
+		;
+		
+
+Designator ::= IDENT:root
+{:
+	Obj id = Tab.find(root);
+    last = id;
+    RESULT = id;
+:}
+IdentList:tail
+{:
+   //if(!last.getType().isRefType()) RESULT = last;
+   //else RESULT = Tab.noObj;
+   RESULT = Tab.find(root);
+:}
+;
+
+DesignatorModifiers ::= LEFT_BRACKET ActPars RIGHT_BRACKET {: // TODO check num of formparams vs actparams:}
+					| /**/
+					;
+
+IdentList ::= IdentList  DOT IDENT:next
+{:
+
+	last = last.getType().getMembersTable().searchKey(next);
+	if(last == null){
+		parser.report_error("No field named "+next+" at "+nextleft, null);
+		last = Tab.noObj;
+		RESULT = Tab.noObj.getType();
+	} else {
+		parser.report_info("Found field named "+last.getName()+" at " + nextleft,null);
+		RESULT = last.getType();
+	}
+:}
+			| IdentList:ilist LEFT_SBRACKET  {: Code.load(last); :}  Expr:e RIGHT_SBRACKET
+{:
+	if( ilist.getKind() == Struct.Array && e.equals(Tab.intType)){
+		
+		last = new Obj(Obj.Var, "", ilist.getElemType());
+		this.parser.arrayAccess = true;
+		RESULT = ilist.getElemType(); 
+	}
+:}
+			| IdentList LEFT_SBRACKET error RIGHT_SBRACKET 
+			| /**/ {:  RESULT = last.getType(); :}
+			;
+			
+ActPars ::= Expr ExprList {: // TODO Check num of params :};
+
+ExprList ::= ExprList COMMA Expr
+			| /**/
+			;
+						
+Relop ::= EQU {: RESULT = Code.eq; :}
+		| NEQ {: RESULT = Code.ne; :}
+		| GT  {: RESULT = Code.gt; :}
+		| GTE {: RESULT = Code.ge; :}
+		| LE  {: RESULT = Code.lt; :}
+		| LEQ {: RESULT = Code.le; :}
+		;

@@ -1,0 +1,247 @@
+INFO  15:18:14,558 - Compiling source file: D:\Nikola\Eclipse\PPDZ389-11\test\.\program.mj
+INFO  15:18:14,567 - #2 program
+INFO  15:18:14,567 - #35 P
+INFO  15:18:14,568 - #12 const
+INFO  15:18:14,568 - #35 int
+INFO  15:18:14,568 - #35 c
+INFO  15:18:14,569 - #10 =
+INFO  15:18:14,569 - #36 5
+INFO  15:18:14,569 - #5 ;
+INFO  15:18:14,569 - Constant c declared at 5
+INFO  15:18:14,570 - #35 int
+INFO  15:18:14,570 - #35 i
+INFO  15:18:14,570 - #5 ;
+INFO  15:18:14,570 - Variable i declared at 6
+INFO  15:18:14,571 - #35 int
+INFO  15:18:14,571 - #35 ii
+INFO  15:18:14,571 - #5 ;
+INFO  15:18:14,571 - Variable ii declared at 7
+INFO  15:18:14,572 - #3 {
+INFO  15:18:14,572 - #24 void
+INFO  15:18:14,572 - #35 main
+INFO  15:18:14,572 - #6 (
+INFO  15:18:14,573 - Global method main declared at 11
+INFO  15:18:14,573 - #7 )
+INFO  15:18:14,573 - #3 {
+INFO  15:18:14,574 - #35 i
+INFO  15:18:14,574 - #10 =
+INFO  15:18:14,574 - #36 0
+INFO  15:18:14,574 - #5 ;
+INFO  15:18:14,575 - #35 ii
+INFO  15:18:14,575 - Correct assignment at 13
+INFO  15:18:14,575 - #10 =
+INFO  15:18:14,575 - #36 0
+INFO  15:18:14,576 - #5 ;
+INFO  15:18:14,576 - #22 while
+INFO  15:18:14,576 - Correct assignment at 14
+INFO  15:18:14,576 - #6 (
+INFO  15:18:14,577 - #35 i
+INFO  15:18:14,577 - #29 <
+INFO  15:18:14,577 - #36 50
+INFO  15:18:14,577 - #33 ||
+INFO  15:18:14,578 - #35 i
+INFO  15:18:14,578 - #29 <
+INFO  15:18:14,578 - #36 100
+INFO  15:18:14,578 - #34 &&
+INFO  15:18:14,578 - #35 i
+INFO  15:18:14,579 - #29 <
+INFO  15:18:14,579 - #36 75
+INFO  15:18:14,579 - #7 )
+INFO  15:18:14,579 - #3 {
+INFO  15:18:14,579 - #15 print
+INFO  15:18:14,580 - #6 (
+INFO  15:18:14,580 - #35 i
+INFO  15:18:14,580 - #7 )
+INFO  15:18:14,580 - #5 ;
+INFO  15:18:14,580 - #15 print
+INFO  15:18:14,581 - Correct argument for write at 17
+INFO  15:18:14,581 - #6 (
+INFO  15:18:14,581 - #37  
+INFO  15:18:14,581 - #7 )
+INFO  15:18:14,582 - #5 ;
+INFO  15:18:14,582 - #15 print
+INFO  15:18:14,582 - Correct argument for write at 18
+INFO  15:18:14,582 - #6 (
+INFO  15:18:14,582 - #37 (
+INFO  15:18:14,583 - #7 )
+INFO  15:18:14,583 - #5 ;
+INFO  15:18:14,583 - #22 while
+INFO  15:18:14,583 - Correct argument for write at 19
+INFO  15:18:14,583 - #6 (
+INFO  15:18:14,584 - #35 ii
+INFO  15:18:14,584 - #29 <
+INFO  15:18:14,584 - #36 5
+INFO  15:18:14,584 - #7 )
+INFO  15:18:14,584 - #3 {
+INFO  15:18:14,585 - #15 print
+INFO  15:18:14,585 - #6 (
+INFO  15:18:14,585 - #37 a
+INFO  15:18:14,585 - #7 )
+INFO  15:18:14,585 - #5 ;
+INFO  15:18:14,586 - #15 print
+INFO  15:18:14,586 - Correct argument for write at 21
+INFO  15:18:14,586 - #6 (
+INFO  15:18:14,586 - #35 c
+INFO  15:18:14,586 - #7 )
+INFO  15:18:14,587 - #5 ;
+INFO  15:18:14,587 - #35 ii
+INFO  15:18:14,587 - Correct argument for write at 22
+INFO  15:18:14,587 - #31 ++
+INFO  15:18:14,588 - #5 ;
+INFO  15:18:14,588 - #4 }
+INFO  15:18:14,588 - Correct assignment at 23
+INFO  15:18:14,589 - #15 print
+INFO  15:18:14,589 - #6 (
+INFO  15:18:14,589 - #37 )
+INFO  15:18:14,589 - #7 )
+INFO  15:18:14,590 - #5 ;
+INFO  15:18:14,590 - #35 i
+INFO  15:18:14,590 - Correct argument for write at 25
+INFO  15:18:14,590 - #31 ++
+INFO  15:18:14,590 - #5 ;
+INFO  15:18:14,591 - #35 ii
+INFO  15:18:14,591 - Correct assignment at 26
+INFO  15:18:14,591 - #10 =
+INFO  15:18:14,591 - #36 0
+INFO  15:18:14,591 - #5 ;
+INFO  15:18:14,592 - #4 }
+INFO  15:18:14,592 - Correct assignment at 27
+INFO  15:18:14,592 - #4 }
+INFO  15:18:14,592 - #4 }
+INFO  15:18:14,593 - Method main was either void or returned correct type.
+INFO  15:18:14,593 - Global vars declared: 2
+INFO  15:18:14,593 - Global arrays declared: 0
+INFO  15:18:14,593 - Global methods declared: 1
+INFO  15:18:14,593 - Classes declared: 0
+INFO  15:18:14,594 - Class vars declared: 0
+INFO  15:18:14,594 - Class methods declared: 0
+INFO  15:18:14,594 - Constants declared: 1
+INFO  15:18:14,594 - Main vars declared: 0
+INFO  15:18:14,594 - Formal parameters declared: 0
+INFO  15:18:14,595 - Print calls: 6
+INFO  15:18:14,596 - No errors detected - generating code
+INFO  15:18:36,625 - Compiling source file: D:\Nikola\Eclipse\PPDZ389-11\test\.\program2.mj
+INFO  15:18:36,634 - #2 program
+INFO  15:18:36,634 - #35 P
+INFO  15:18:36,634 - #12 const
+INFO  15:18:36,634 - #35 int
+INFO  15:18:36,634 - #35 c
+INFO  15:18:36,634 - #10 =
+INFO  15:18:36,634 - #36 5
+INFO  15:18:36,635 - #5 ;
+INFO  15:18:36,635 - Constant c declared at 2
+INFO  15:18:36,635 - #35 int
+INFO  15:18:36,635 - #35 i
+INFO  15:18:36,635 - #5 ;
+INFO  15:18:36,635 - Variable i declared at 3
+INFO  15:18:36,636 - #35 int
+INFO  15:18:36,636 - #35 ii
+INFO  15:18:36,636 - #5 ;
+INFO  15:18:36,636 - Variable ii declared at 4
+INFO  15:18:36,637 - #35 char
+INFO  15:18:36,637 - #35 arr
+INFO  15:18:36,637 - #8 [
+INFO  15:18:36,637 - #9 ]
+INFO  15:18:36,637 - #5 ;
+INFO  15:18:36,638 - Variable arr declared at 5
+INFO  15:18:36,638 - #3 {
+INFO  15:18:36,638 - #24 void
+INFO  15:18:36,638 - #35 main
+INFO  15:18:36,639 - #6 (
+INFO  15:18:36,639 - Global method main declared at 10
+INFO  15:18:36,639 - #7 )
+INFO  15:18:36,639 - #3 {
+INFO  15:18:36,640 - #35 i
+INFO  15:18:36,640 - #10 =
+INFO  15:18:36,640 - #36 5
+INFO  15:18:36,640 - #5 ;
+INFO  15:18:36,641 - #35 arr
+INFO  15:18:36,641 - Correct assignment at 12
+INFO  15:18:36,641 - #10 =
+INFO  15:18:36,641 - #18 new
+INFO  15:18:36,642 - #35 char
+INFO  15:18:36,642 - #8 [
+INFO  15:18:36,642 - #35 i
+INFO  15:18:36,642 - #9 ]
+INFO  15:18:36,642 - #5 ;
+INFO  15:18:36,643 - #35 arr
+INFO  15:18:36,643 - Correct assignment at 13
+INFO  15:18:36,643 - #8 [
+INFO  15:18:36,643 - #36 0
+INFO  15:18:36,644 - #9 ]
+INFO  15:18:36,644 - #10 =
+INFO  15:18:36,644 - #37 a
+INFO  15:18:36,645 - #5 ;
+INFO  15:18:36,645 - #35 arr
+INFO  15:18:36,645 - Correct assignment at 15
+INFO  15:18:36,645 - #8 [
+INFO  15:18:36,646 - #36 1
+INFO  15:18:36,646 - #9 ]
+INFO  15:18:36,646 - #10 =
+INFO  15:18:36,646 - #37 b
+INFO  15:18:36,646 - #5 ;
+INFO  15:18:36,647 - #35 arr
+INFO  15:18:36,647 - Correct assignment at 16
+INFO  15:18:36,647 - #8 [
+INFO  15:18:36,647 - #36 2
+INFO  15:18:36,648 - #9 ]
+INFO  15:18:36,648 - #10 =
+INFO  15:18:36,648 - #37 c
+INFO  15:18:36,648 - #5 ;
+INFO  15:18:36,649 - #35 arr
+INFO  15:18:36,649 - Correct assignment at 17
+INFO  15:18:36,649 - #8 [
+INFO  15:18:36,649 - #36 3
+INFO  15:18:36,650 - #9 ]
+INFO  15:18:36,650 - #10 =
+INFO  15:18:36,650 - #37 d
+INFO  15:18:36,650 - #5 ;
+INFO  15:18:36,650 - #35 arr
+INFO  15:18:36,651 - Correct assignment at 18
+INFO  15:18:36,651 - #8 [
+INFO  15:18:36,651 - #36 4
+INFO  15:18:36,651 - #9 ]
+INFO  15:18:36,652 - #10 =
+INFO  15:18:36,652 - #37 e
+INFO  15:18:36,652 - #5 ;
+INFO  15:18:36,652 - #35 ii
+INFO  15:18:36,653 - Correct assignment at 19
+INFO  15:18:36,653 - #10 =
+INFO  15:18:36,653 - #36 0
+INFO  15:18:36,653 - #5 ;
+INFO  15:18:36,654 - #22 while
+INFO  15:18:36,654 - Correct assignment at 21
+INFO  15:18:36,654 - #6 (
+INFO  15:18:36,655 - #35 ii
+INFO  15:18:36,655 - #29 <
+INFO  15:18:36,655 - #36 5
+INFO  15:18:36,656 - #7 )
+INFO  15:18:36,656 - #3 {
+INFO  15:18:36,656 - #15 print
+INFO  15:18:36,656 - #6 (
+INFO  15:18:36,656 - #35 arr
+INFO  15:18:36,656 - #8 [
+INFO  15:18:36,656 - #35 ii
+INFO  15:18:36,656 - #9 ]
+INFO  15:18:36,656 - #7 )
+INFO  15:18:36,656 - #5 ;
+INFO  15:18:36,656 - #35 ii
+INFO  15:18:36,656 - Correct argument for write at 23
+INFO  15:18:36,657 - #31 ++
+INFO  15:18:36,657 - #5 ;
+INFO  15:18:36,657 - #4 }
+INFO  15:18:36,657 - Correct assignment at 24
+INFO  15:18:36,657 - #4 }
+INFO  15:18:36,657 - #4 }
+INFO  15:18:36,657 - Method main was either void or returned correct type.
+INFO  15:18:36,657 - Global vars declared: 3
+INFO  15:18:36,657 - Global arrays declared: 1
+INFO  15:18:36,657 - Global methods declared: 1
+INFO  15:18:36,657 - Classes declared: 0
+INFO  15:18:36,658 - Class vars declared: 0
+INFO  15:18:36,658 - Class methods declared: 0
+INFO  15:18:36,658 - Constants declared: 1
+INFO  15:18:36,658 - Main vars declared: 0
+INFO  15:18:36,658 - Formal parameters declared: 0
+INFO  15:18:36,658 - Print calls: 1
+INFO  15:18:36,659 - No errors detected - generating code
